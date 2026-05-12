@@ -1,0 +1,1143 @@
+1. Design a distributed application using MapReduce (Using Java) which processes a log file of a system. List out the users who have logged for maximum period on the system. Use simple log file and process it using a pseudo distribution mode on Hadoop platform.
+
+# Import code file :
+- Setting > Shared Folders > Path + > Folder Path > Select folder > Select Auto-mount & Auto-... > ok > ok
+- Start Cloudera > terminal :
+       sudo mount -t vboxsf folder_name /mnt
+- If this doesn't work > go to terminal : 
+       sudo mkdir /mnt/folder_name
+       sudo mount -t vboxsf folder_name /mnt/folder_name
+
+PARTA
+
+1. Open Eclipse > File > New > Java Project > ( Name it – Programs) > Next > Click on
+Libraries Tab > Click on Add External JARS tab
+
+jar FILE LOCATION
+/usr/lib/Hadoop ->select all jar files
+/usr/lib/Hadoop/client ->select all jar files
+
+2. Right Click > New > Package ( Name it - LogFile) > Finish.
+
+3. Right Click on LogFile Package > New > Class (Name it – UserLogDriver).
+
+# Add following code in that class UserLogDriver :
+
+package LogFile;
+
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.*;
+import org.apache.hadoop.mapred.*;
+
+public class UserLogDriver {
+	private static JobClient my_client;
+public static void main(String[] args) {
+ my_client = new JobClient();
+// Create a configuration object for the job
+JobConf job_conf = new JobConf(UserLogDriver.class);
+// Set a name of the Job
+job_conf.setJobName("MaxLoggedUsers");
+// Specify data type of output key and value
+job_conf.setOutputKeyClass(Text.class);
+job_conf.setOutputValueClass(IntWritable.class);
+// Specify names of Mapper and Reducer Class
+job_conf.setMapperClass(UserLogMapper.class);
+
+job_conf.setReducerClass(UserLogReducer .class);
+//Specify formats of the data type of Input and output
+job_conf.setInputFormat(TextInputFormat.class);
+job_conf.setOutputFormat(TextOutputFormat.class);
+//Set input and output directories using command line arguments,
+//arg[0] = name of input directory on HDFS, and arg[1] = name of output directory to be created to store the output file.
+FileInputFormat.setInputPaths(job_conf, new Path(args[0]));
+FileOutputFormat.setOutputPath(job_conf, new Path(args[1]));
+my_client.setConf(job_conf);
+try {
+//Run the job
+JobClient.runJob(job_conf);
+} catch (Exception e) {
+e.printStackTrace();
+}
+}
+
+
+# Save the file
+
+
+4. Right Click on LogFile Package > New > Class (Name it – UserLogReducer).
+
+package LogFile;
+
+import java.io.IOException;
+import java.util.*;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapred.*;
+public class UserLogReducer extends MapReduceBase implements Reducer<Text,
+IntWritable, Text, IntWritable> {
+public void reduce(Text t_key, Iterator<IntWritable> values,
+OutputCollector<Text,IntWritable> output, Reporter reporter) throws IOException
+{
+Text key = t_key;
+int frequencyForUser = 0;
+while (values.hasNext()) {
+// replace type of value with the actual type of our value
+IntWritable value = (IntWritable) values.next();
+frequencyForUser += value.get();
+}
+output.collect(key, new IntWritable(frequencyForUser));
+}
+}
+
+
+# Save the file
+
+5. Right Click on LogFile Package > New > Class (Name it – UserLogMapper).
+
+package LogFile;
+
+import java.io.IOException;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapred.*;
+public class UserLogMapper extends MapReduceBase implements Mapper<LongWritable,
+Text, Text, IntWritable> {
+private final static IntWritable one = new IntWritable(1);
+public void map(LongWritable key, Text value, OutputCollector<Text,
+IntWritable> output, Reporter reporter) throws IOException {
+String valueString = value.toString();
+String[] SingleUserData = valueString.split("-");
+output.collect(new Text(SingleUserData[0]), one);
+}
+}
+
+# Save the file
+
+
+
+PART B
+ 
+Create .jar file for your program execution :
+Make a jar file
+
+In eclipse Right click on Programs Project > then select Export> Click on Java>JAR
+Files>Click on Next>then select export destination for JAR file as
+/home/Cloudera/LogFile.jar>Finish
+
+*LogFile.jar file will get created in your /home/Cloudera/ folder*
+
+
+
+PART C:
+
+# Open terminal
+
+pwd
+
+hdfs dfs -mkdir /InputFolder
+
+hdfs dfs -ls /
+
+hdfs dfs -put /mnt/access_log_short.txt /InputFolder  (error : check the path of access_log_short.txt)
+
+hdfs dfs -cat /InputFolder/access_log_short.txt
+
+hadoop jar /home/cloudera/LogFile.jar LogFile.UserLogDriver /InputFolder/access_log_short.txt /OutputFolder
+
+hdfs dfs -ls /OutputFolder
+
+hdfs dfs -cat /OutputFolder/part-00000
+
+
+OR
+Goto Browser and enter
+localhost:50070 and check the output in output directory.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# EXPLANATION
+
+# Project Overview
+
+This program uses:
+
+* **Mapper** → Reads log file line by line and emits `(User, 1)`
+* **Reducer** → Adds all counts for each user
+* **Driver** → Configures and runs the MapReduce job
+
+
+
+# PART A — Java Code Explanation
+
+---
+
+# 1. UserLogDriver.java
+
+This is the **main class** of the Hadoop MapReduce program.
+
+It:
+
+* Configures the job
+* Specifies mapper and reducer
+* Defines input/output paths
+* Starts execution
+
+
+ 
+# Line-by-Line Explanation
+
+---
+
+## Package Declaration
+
+```java
+package LogFile;
+```
+
+* Organizes classes inside package named `LogFile`
+
+---
+
+## Import Statements
+
+```java
+import org.apache.hadoop.fs.Path;
+```
+
+* Used for HDFS file paths
+
+---
+
+```java
+import org.apache.hadoop.io.*;
+```
+
+Contains Hadoop datatypes:
+
+| Datatype     | Meaning      |
+| ------------ | ------------ |
+| Text         | String       |
+| IntWritable  | Integer      |
+| LongWritable | Long integer |
+
+Hadoop uses Writable classes instead of Java primitive datatypes.
+
+---
+
+```java
+import org.apache.hadoop.mapred.*;
+```
+
+Imports Hadoop MapReduce APIs.
+
+---
+
+# Class Declaration
+
+```java
+public class UserLogDriver
+```
+
+Main driver class.
+
+---
+
+# JobClient Object
+
+```java
+private static JobClient my_client;
+```
+
+* Used to submit MapReduce job to Hadoop.
+
+---
+
+# Main Method
+
+```java
+public static void main(String[] args)
+```
+
+Execution starts here.
+
+---
+
+# Create JobClient
+
+```java
+my_client = new JobClient();
+```
+
+Creates Hadoop job client.
+
+---
+
+# Create Job Configuration
+
+```java
+JobConf job_conf = new JobConf(UserLogDriver.class);
+```
+
+Creates configuration object for MapReduce job.
+
+Stores:
+
+* mapper info
+* reducer info
+* input/output path
+* datatype details
+
+---
+
+# Set Job Name
+
+```java
+job_conf.setJobName("MaxLoggedUsers");
+```
+
+Sets Hadoop job name.
+
+Visible in Hadoop UI.
+
+---
+
+# Output Key Class
+
+```java
+job_conf.setOutputKeyClass(Text.class);
+```
+
+Output key datatype is Text (String).
+
+Example:
+
+```txt
+Ram
+Sham
+```
+
+---
+
+# Output Value Class
+
+```java
+job_conf.setOutputValueClass(IntWritable.class);
+```
+
+Output values are integers.
+
+Example:
+
+```txt
+3
+2
+```
+
+---
+
+# Set Mapper Class
+
+```java
+job_conf.setMapperClass(UserLogMapper.class);
+```
+
+Specifies mapper class.
+
+---
+
+# Set Reducer Class
+
+```java
+job_conf.setReducerClass(UserLogReducer.class);
+```
+
+Specifies reducer class.
+
+---
+
+# Input Format
+
+```java
+job_conf.setInputFormat(TextInputFormat.class);
+```
+
+Reads input line-by-line.
+
+---
+
+# Output Format
+
+```java
+job_conf.setOutputFormat(TextOutputFormat.class);
+```
+
+Writes output in text format.
+
+---
+
+# Set Input Path
+
+```java
+FileInputFormat.setInputPaths(job_conf, new Path(args[0]));
+```
+
+Input path taken from command line.
+
+Example:
+
+```bash
+/InputFolder/access_log_short.txt
+```
+
+---
+
+# Set Output Path
+
+```java
+FileOutputFormat.setOutputPath(job_conf, new Path(args[1]));
+```
+
+Output directory path.
+
+Example:
+
+```bash
+/OutputFolder
+```
+
+---
+
+# Set Configuration
+
+```java
+my_client.setConf(job_conf);
+```
+
+Applies configuration.
+
+---
+
+# Run Job
+
+```java
+JobClient.runJob(job_conf);
+```
+
+Starts MapReduce job execution.
+
+---
+
+# Exception Handling
+
+```java
+catch(Exception e)
+```
+
+Handles runtime errors.
+
+---
+
+# 2. UserLogMapper.java
+
+Mapper reads each log entry and emits:
+
+```txt
+(User,1)
+```
+
+# Mapper Explanation
+
+---
+
+# Mapper Interface
+
+```java
+implements Mapper<LongWritable, Text, Text, IntWritable>
+```
+
+Meaning:
+
+| Input/Output | Datatype     |
+| ------------ | ------------ |
+| Input Key    | LongWritable |
+| Input Value  | Text         |
+| Output Key   | Text         |
+| Output Value | IntWritable  |
+
+---
+
+# One Variable
+
+```java
+private final static IntWritable one = new IntWritable(1);
+```
+
+Stores constant value 1.
+
+Used for counting.
+
+---
+
+# Map Method
+
+```java
+public void map(...)
+```
+
+Processes one line at a time.
+
+---
+
+# Convert Line to String
+
+```java
+String valueString = value.toString();
+```
+
+Converts Hadoop Text to Java String.
+
+Example:
+
+```txt
+Ram-login
+```
+
+---
+
+# Split Line
+
+```java
+String[] SingleUserData = valueString.split("-");
+```
+
+Splits using "-"
+
+Example:
+
+```txt
+Ram-login
+```
+
+Becomes:
+
+```java
+SingleUserData[0] = "Ram"
+SingleUserData[1] = "login"
+```
+
+---
+
+# Emit Output
+
+```java
+output.collect(new Text(SingleUserData[0]), one);
+```
+
+Outputs:
+
+```txt
+Ram 1
+Sham 1
+```
+
+---
+
+# Mapper Working Example
+
+Input:
+
+```txt
+Ram-login
+Ram-login
+Sham-login
+```
+
+Mapper Output:
+
+```txt
+Ram 1
+Ram 1
+Sham 1
+```
+
+---
+
+# 3. UserLogReducer.java
+
+Reducer sums all counts for each user.
+
+
+# Reducer Interface
+
+```java
+implements Reducer<Text, IntWritable, Text, IntWritable>
+```
+
+Reducer input:
+
+```txt
+Ram [1,1,1]
+```
+
+Reducer output:
+
+```txt
+Ram 3
+```
+
+---
+
+# Reduce Method
+
+Processes grouped mapper output.
+
+---
+
+# Initialize Counter
+
+```java
+int frequencyForUser = 0;
+```
+
+Stores total count.
+
+---
+
+# Loop Through Values
+
+```java
+while(values.hasNext())
+```
+
+Reads all values for same user.
+
+---
+
+# Get Value
+
+```java
+IntWritable value = values.next();
+```
+
+Gets next integer.
+
+---
+
+# Add Count
+
+```java
+frequencyForUser += value.get();
+```
+
+Adds counts.
+
+---
+
+# Final Output
+
+```java
+output.collect(key, new IntWritable(frequencyForUser));
+```
+
+Produces final result.
+
+---
+
+# Complete Flow of Program
+
+Input File:
+
+```txt
+Ram-login
+Ram-login
+Sham-login
+```
+
+---
+
+# Mapper Output
+
+```txt
+Ram 1
+Ram 1
+Sham 1
+```
+
+---
+
+# Shuffle & Sort
+
+```txt
+Ram [1,1]
+Sham [1]
+```
+
+---
+
+# Reducer Output
+
+```txt
+Ram 2
+Sham 1
+```
+
+---
+
+# PART B — JAR File Creation
+
+---
+
+# Export JAR
+
+### Steps
+
+1. Right click project
+2. Export
+3. Java → JAR File
+4. Next
+5. Destination:
+
+```txt
+/home/cloudera/LogFile.jar
+```
+
+6. Finish
+
+---
+
+# Purpose of JAR File
+
+JAR = Java Archive
+
+Contains:
+
+* compiled `.class` files
+* project metadata
+
+Hadoop executes JAR file.
+
+---
+
+# PART C — Hadoop Commands Explanation
+
+---
+
+# Check Current Directory
+
+```bash
+pwd
+```
+
+Shows current working directory.
+
+Example:
+
+```txt
+/home/cloudera
+```
+
+---
+
+# Create HDFS Directory
+
+```bash
+hdfs dfs -mkdir /InputFolder
+```
+
+Creates folder in Hadoop Distributed File System.
+
+---
+
+# List HDFS Files
+
+```bash
+hdfs dfs -ls /
+```
+
+Shows all folders in HDFS root.
+
+---
+
+# Upload File to HDFS
+
+```bash
+hdfs dfs -put /mnt/access_log_short.txt /InputFolder
+```
+
+Copies file from local system to HDFS.
+
+---
+
+# View File Contents
+
+```bash
+hdfs dfs -cat /InputFolder/access_log_short.txt
+```
+
+Displays contents of HDFS file.
+
+---
+
+# Run Hadoop Program
+
+```bash
+hadoop jar /home/cloudera/LogFile.jar LogFile.UserLogDriver /InputFolder/access_log_short.txt /OutputFolder
+```
+
+---
+
+# Breakdown of Command
+
+---
+
+## hadoop jar
+
+Runs Hadoop MapReduce program.
+
+---
+
+## /home/cloudera/LogFile.jar
+
+Your JAR file.
+
+---
+
+## LogFile.UserLogDriver
+
+Main class name.
+
+Format:
+
+```txt
+package.classname
+```
+
+---
+
+## /InputFolder/access_log_short.txt
+
+Input file path in HDFS.
+
+---
+
+## /OutputFolder
+
+Output directory.
+
+Hadoop automatically creates it.
+
+---
+
+# Check Output Folder
+
+```bash
+hdfs dfs -ls /OutputFolder
+```
+
+Shows generated files.
+
+Usually:
+
+```txt
+part-00000
+_SUCCESS
+```
+
+---
+
+# View Final Output
+
+```bash
+hdfs dfs -cat /OutputFolder/part-00000
+```
+
+Displays result.
+
+Example:
+
+```txt
+Ram 5
+Sham 2
+```
+
+---
+
+# localhost:50070
+
+Opens Hadoop NameNode web UI.
+
+Used to:
+
+* browse HDFS
+* check output files
+* monitor jobs
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#Viva Questions with Simple Answers
+
+---
+
+## 1. What is Hadoop?
+
+Hadoop is a framework used to store and process big data in distributed systems.
+
+---
+
+## 2. What is MapReduce?
+
+MapReduce is a programming model used for processing large amounts of data in parallel.
+
+---
+
+## 3. What is HDFS?
+
+HDFS stands for Hadoop Distributed File System.
+It stores data across multiple machines.
+
+---
+
+## 4. What is a Mapper?
+
+Mapper reads input data and converts it into key-value pairs.
+
+---
+
+## 5. What is a Reducer?
+
+Reducer processes mapper output and produces final result.
+
+---
+
+## 6. What is the role of Driver class?
+
+Driver class configures and starts the MapReduce job.
+
+---
+
+## 7. Why do we use Hadoop?
+
+Hadoop is used for:
+
+* Big data storage
+* Fast processing
+* Distributed computing
+
+---
+
+## 8. What is pseudo distributed mode?
+
+In pseudo distributed mode, Hadoop services run on a single machine.
+
+---
+
+## 9. What is a key-value pair in MapReduce?
+
+Data is processed in the form:
+
+```txt id="3k2v9s"
+<Key, Value>
+```
+
+Example:
+
+```txt id="0ch9g3"
+<Ram, 1>
+```
+
+---
+
+## 10. What is the output of Mapper?
+
+Mapper output is intermediate key-value data.
+
+Example:
+
+```txt id="upwt0f"
+Ram 1
+Sham 1
+```
+
+---
+
+## 11. What is shuffle and sort?
+
+Shuffle and sort groups same keys together before reducer execution.
+
+Example:
+
+```txt id="pbhn69"
+Ram [1,1,1]
+```
+
+---
+
+## 12. Why is IntWritable used instead of int?
+
+Hadoop works with Writable datatypes for serialization.
+
+---
+
+## 13. What is Text class in Hadoop?
+
+Text is Hadoop’s string datatype.
+
+---
+
+## 14. What is the purpose of JobConf?
+
+JobConf stores job configuration like:
+
+* Mapper class
+* Reducer class
+* Input/output paths
+
+---
+
+## 15. What does the map() function do?
+
+It processes one input record at a time and generates key-value pairs.
+
+---
+
+## 16. What does the reduce() function do?
+
+It combines values of same key and produces final output.
+
+---
+
+## 17. Why do we create a JAR file?
+
+JAR file contains compiled Java classes required to run Hadoop program.
+
+---
+
+## 18. Why should output folder not exist before execution?
+
+Hadoop automatically creates output folder.
+If it already exists, job fails.
+
+---
+
+## 19. What is the use of hdfs dfs -put command?
+
+It uploads files from local system to HDFS.
+
+Example:
+
+```bash id="d4ewhq"
+hdfs dfs -put file.txt /InputFolder
+```
+
+---
+
+## 20. What is the final output of this program?
+
+The program displays users and their total login count.
+
+Example:
+
+```txt id="10xb8k"
+Ram 5
+Sham 2
+```
+
