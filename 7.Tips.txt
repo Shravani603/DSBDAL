@@ -378,7 +378,10 @@ plt.show()
 
 ## Definition
 
-* **Heatmap** : Visualization that represents values using colors.
+* **Heatmap** :  Visualization using colors to represent correlation or intensity values.
++1 → Strong positive relation
+-1 → Strong negative relation
+0 → No relation
 
 ---
 

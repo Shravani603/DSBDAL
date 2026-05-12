@@ -416,6 +416,9 @@ plt.show()
 
 * Heatmap shows relationships between pollutants.
 * RSPM and SPM show strong positive correlation (0.8).
++1 → Strong positive relation
+-1 → Strong negative relation
+0 → No relation
 
 ---
 
@@ -795,6 +798,35 @@ plt.show()
 
 
 
+
+| Column Name                   | Full Form                               | Meaning                                                                                                |
+| ----------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `stn_code`                    | Station Code                            | Unique ID given to an air quality monitoring station.                                                  |
+| `sampling_date`               | Sampling Date                           | Date on which the air sample was collected.                                                            |
+| `state`                       | State                                   | Name of the Indian state where monitoring was done.                                                    |
+| `location`                    | Location                                | City or area where the monitoring station is situated.                                                 |
+| `agency`                      | Monitoring Agency                       | Organization responsible for collecting air quality data.                                              |
+| `type`                        | Area Type                               | Type of area such as Residential, Industrial, or Sensitive area.                                       |
+| `so2`                         | Sulphur Dioxide                         | Amount of SO₂ gas in air. It is a harmful pollutant mainly released from industries and burning fuels. |
+| `no2`                         | Nitrogen Dioxide                        | Amount of NO₂ gas in air. Mainly produced by vehicles and industrial emissions.                        |
+| `rspm`                        | Respirable Suspended Particulate Matter | Fine dust particles (PM10) that can enter the lungs and affect breathing.                              |
+| `spm`                         | Suspended Particulate Matter            | Total suspended dust particles present in air.                                                         |
+| `location_monitoring_station` | Location of Monitoring Station          | Exact place/name of the station where pollution was measured.                                          |
+| `pm2_5`                       | Particulate Matter 2.5                  | Very tiny particles (diameter ≤ 2.5 micrometers) harmful to lungs and heart.                           |
+| `date`                        | Date                                    | General date column stored in date format for analysis.                                                |
+
+### Important Pollutants
+
+* **SO₂** → Causes breathing problems and acid rain.
+* **NO₂** → Causes lung irritation and smog.
+* **RSPM / PM10** → Dust particles harmful to respiratory system.
+* **PM2.5** → Most dangerous because particles are extremely small and enter deep into lungs.
+
+### Simple Difference
+
+* **SPM** → All suspended particles in air.
+* **RSPM (PM10)** → Smaller breathable particles.
+* **PM2.5** → Ultra-fine particles, more harmful than PM10.
 
 
 
