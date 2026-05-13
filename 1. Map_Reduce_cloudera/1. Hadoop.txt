@@ -474,126 +474,272 @@ Handles runtime errors.
 
 # 2. UserLogMapper.java
 
-Mapper reads each log entry and emits:
+## `UserLogReducer.java`
 
-```txt
-(User,1)
+```java
+package LogFile;
 ```
 
-# Mapper Explanation
+* `package` → Used to group related Java classes together.
+* `LogFile` → Package name where this class is stored.
 
 ---
 
-# Mapper Interface
+```java
+import java.io.IOException;
+```
+
+* `import` → Used to include external classes.
+* `java.io.IOException` → Exception class used for input/output errors.
+
+---
 
 ```java
-implements Mapper<LongWritable, Text, Text, IntWritable>
+import java.util.*;
+```
+
+* Imports all utility classes from Java utility package.
+* `*` means all classes.
+
+---
+
+```java
+import org.apache.hadoop.io.IntWritable;
+```
+
+* Imports Hadoop integer data type.
+* `IntWritable` → Hadoop wrapper class for integer values.
+
+---
+
+```java
+import org.apache.hadoop.io.Text;
+```
+
+* `Text` → Hadoop wrapper class for String.
+
+---
+
+```java
+import org.apache.hadoop.mapred.*;
+```
+
+* Imports all MapReduce classes from Hadoop old API.
+
+---
+
+```java
+public class UserLogReducer extends MapReduceBase implements Reducer<Text,
+IntWritable, Text, IntWritable>
+```
+
+### Breakdown
+
+* `public` → Class can be accessed from anywhere.
+* `class` → Keyword to define class.
+* `UserLogReducer` → Class name.
+* `extends` → Inherits features from another class.
+* `MapReduceBase` → Base class for Mapper/Reducer.
+* `implements` → Class follows Reducer interface rules.
+
+### Reducer Parameters
+
+```java
+Reducer<Text, IntWritable, Text, IntWritable>
+```
+
+Format:
+
+```java
+Reducer<InputKey, InputValue, OutputKey, OutputValue>
 ```
 
 Meaning:
 
-| Input/Output | Datatype     |
-| ------------ | ------------ |
-| Input Key    | LongWritable |
-| Input Value  | Text         |
-| Output Key   | Text         |
-| Output Value | IntWritable  |
+* `Text` → Input key type
+* `IntWritable` → Input value type
+* `Text` → Output key type
+* `IntWritable` → Output value type
 
 ---
 
-# One Variable
-
 ```java
-private final static IntWritable one = new IntWritable(1);
+{
 ```
 
-Stores constant value 1.
-
-Used for counting.
+* Start of class body.
 
 ---
 
-# Map Method
-
 ```java
-public void map(...)
+public void reduce(Text t_key, Iterator<IntWritable> values,
+OutputCollector<Text,IntWritable> output, Reporter reporter) throws IOException
 ```
 
-Processes one line at a time.
+## Reduce Function
+
+### `public`
+
+Accessible everywhere.
+
+### `void`
+
+Returns nothing.
+
+### `reduce`
+
+Reducer method called automatically by Hadoop.
 
 ---
 
-# Convert Line to String
+### Parameters
 
-```java
-String valueString = value.toString();
+#### `Text t_key`
+
+* Key received from mapper.
+* Example: username.
+
+---
+
+#### `Iterator<IntWritable> values`
+
+* Contains all values for one key.
+* Example:
+
+```text
+Rahul → 1,1,1,1
 ```
 
-Converts Hadoop Text to Java String.
+---
+
+#### `OutputCollector<Text,IntWritable> output`
+
+* Used to send final reducer output.
+
+---
+
+#### `Reporter reporter`
+
+* Used for progress reporting.
+
+---
+
+#### `throws IOException`
+
+* Handles input/output exceptions.
+
+---
+
+```java
+{
+```
+
+Start of reduce method.
+
+---
+
+```java
+Text key = t_key;
+```
+
+* Copies mapper key into local variable `key`.
+
+---
+
+```java
+int frequencyForUser = 0;
+```
+
+* Variable to store total count.
+* Initially 0.
+
+---
+
+```java
+while (values.hasNext()) {
+```
+
+### Breakdown
+
+* `while` → Loop.
+* `values.hasNext()` → Checks if more values exist.
+
+---
+
+```java
+IntWritable value = (IntWritable) values.next();
+```
+
+### Breakdown
+
+* `values.next()` → Gets next value.
+* `(IntWritable)` → Type casting.
+* Stores current value into variable `value`.
 
 Example:
 
-```txt
-Ram-login
+```text
+1
 ```
 
 ---
 
-# Split Line
-
 ```java
-String[] SingleUserData = valueString.split("-");
+frequencyForUser += value.get();
 ```
 
-Splits using "-"
+### Breakdown
+
+* `value.get()` → Extracts integer from Hadoop wrapper.
+* `+=` → Adds to total frequency.
 
 Example:
 
-```txt
-Ram-login
-```
-
-Becomes:
-
-```java
-SingleUserData[0] = "Ram"
-SingleUserData[1] = "login"
+```text
+0 + 1 + 1 + 1 = 3
 ```
 
 ---
 
-# Emit Output
-
 ```java
-output.collect(new Text(SingleUserData[0]), one);
+}
 ```
 
-Outputs:
+End of while loop.
 
-```txt
-Ram 1
-Sham 1
+---
+
+```java
+output.collect(key, new IntWritable(frequencyForUser));
+```
+
+### Breakdown
+
+* `output.collect()` → Sends reducer output.
+* `key` → Username.
+* `new IntWritable(frequencyForUser)` → Final count.
+
+Example output:
+
+```text
+Rahul 3
 ```
 
 ---
 
-# Mapper Working Example
-
-Input:
-
-```txt
-Ram-login
-Ram-login
-Sham-login
+```java
+}
 ```
 
-Mapper Output:
+End reduce method.
 
-```txt
-Ram 1
-Ram 1
-Sham 1
+---
+
+```java
+}
 ```
+
+End class.
 
 ---
 
@@ -602,121 +748,297 @@ Sham 1
 Reducer sums all counts for each user.
 
 
-# Reducer Interface
+# `UserLogMapper.java`
 
 ```java
-implements Reducer<Text, IntWritable, Text, IntWritable>
+package LogFile;
 ```
 
-Reducer input:
-
-```txt
-Ram [1,1,1]
-```
-
-Reducer output:
-
-```txt
-Ram 3
-```
+* Package name.
 
 ---
-
-# Reduce Method
-
-Processes grouped mapper output.
-
----
-
-# Initialize Counter
 
 ```java
-int frequencyForUser = 0;
+import java.io.IOException;
 ```
 
-Stores total count.
+* Imports exception handling class.
 
 ---
-
-# Loop Through Values
 
 ```java
-while(values.hasNext())
+import org.apache.hadoop.io.IntWritable;
 ```
 
-Reads all values for same user.
+* Hadoop integer wrapper class.
 
 ---
-
-# Get Value
 
 ```java
-IntWritable value = values.next();
+import org.apache.hadoop.io.LongWritable;
 ```
 
-Gets next integer.
+* Hadoop long integer wrapper.
+* Used for line offset/key.
 
 ---
-
-# Add Count
 
 ```java
-frequencyForUser += value.get();
+import org.apache.hadoop.io.Text;
 ```
 
-Adds counts.
+* Hadoop String wrapper.
 
 ---
-
-# Final Output
 
 ```java
-output.collect(key, new IntWritable(frequencyForUser));
+import org.apache.hadoop.mapred.*;
 ```
 
-Produces final result.
+* Imports Hadoop MapReduce classes.
 
 ---
 
-# Complete Flow of Program
+```java
+public class UserLogMapper extends MapReduceBase implements Mapper<LongWritable,
+Text, Text, IntWritable>
+```
 
-Input File:
+## Mapper Declaration
 
-```txt
-Ram-login
-Ram-login
-Sham-login
+### Mapper Format
+
+```java
+Mapper<InputKey, InputValue, OutputKey, OutputValue>
+```
+
+Meaning:
+
+* `LongWritable` → Input key
+* `Text` → Input value
+* `Text` → Output key
+* `IntWritable` → Output value
+
+---
+
+### Input Explanation
+
+Example input file:
+
+```text
+Rahul-Login
+Amit-Logout
+```
+
+Hadoop reads as:
+
+```text
+0 Rahul-Login
+12 Amit-Logout
+```
+
+Where:
+
+* `0`, `12` → byte positions (`LongWritable`)
+* line text → `Text`
+
+---
+
+```java
+{
+```
+
+Start class body.
+
+---
+
+```java
+private final static IntWritable one = new IntWritable(1);
+```
+
+### Breakdown
+
+* `private` → Accessible only inside class.
+* `final` → Value cannot change.
+* `static` → Shared by all objects.
+* `IntWritable(1)` → Hadoop integer value 1.
+
+Used for counting.
+
+---
+
+```java
+public void map(LongWritable key, Text value, OutputCollector<Text,
+IntWritable> output, Reporter reporter) throws IOException {
+```
+
+## Map Function
+
+### Parameters
+
+---
+
+### `LongWritable key`
+
+* Byte position of line.
+
+Example:
+
+```text
+0
+15
+30
+```
+
+---
+
+### `Text value`
+
+* One line from input file.
+
+Example:
+
+```text
+Rahul-Login
+```
+
+---
+
+### `OutputCollector<Text, IntWritable> output`
+
+* Used to send mapper output.
+
+---
+
+### `Reporter reporter`
+
+* Tracks progress.
+
+---
+
+```java
+String valueString = value.toString();
+```
+
+### Breakdown
+
+* Converts Hadoop `Text` into normal Java String.
+
+Example:
+
+```text
+"Rahul-Login"
+```
+
+---
+
+```java
+String[] SingleUserData = valueString.split("-");
+```
+
+### Breakdown
+
+* `split("-")` → Splits string using `-`.
+
+Example:
+
+```text
+Rahul-Login
+```
+
+Becomes:
+
+```java
+SingleUserData[0] = Rahul
+SingleUserData[1] = Login
+```
+
+---
+
+```java
+output.collect(new Text(SingleUserData[0]), one);
+```
+
+### Breakdown
+
+* `SingleUserData[0]` → Username.
+* `new Text(...)` → Converts to Hadoop Text.
+* `one` → Integer value 1.
+* Sends output.
+
+Example mapper output:
+
+```text
+Rahul 1
+Amit 1
+Rahul 1
+```
+
+---
+
+```java
+}
+```
+
+End map method.
+
+---
+
+```java
+}
+```
+
+End class.
+
+---
+
+# Overall Working
+
+## Input File
+
+```text
+Rahul-Login
+Amit-Login
+Rahul-Logout
+Rahul-Login
 ```
 
 ---
 
 # Mapper Output
 
-```txt
-Ram 1
-Ram 1
-Sham 1
+```text
+Rahul 1
+Amit 1
+Rahul 1
+Rahul 1
 ```
 
 ---
 
-# Shuffle & Sort
+# Shuffle & Sort Phase
 
-```txt
-Ram [1,1]
-Sham [1]
+```text
+Rahul → 1,1,1
+Amit → 1
 ```
 
 ---
 
 # Reducer Output
 
-```txt
-Ram 2
-Sham 1
+```text
+Rahul 3
+Amit 1
 ```
 
----
+This means:
+
+* Rahul appeared 3 times
+* Amit appeared 1 time
+
+
+
 
 # PART B — JAR File Creation
 
